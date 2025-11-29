@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Interview Preparation Syllabus</title>
+    <title>Topmate Tracker</title>
     <style>
       * {
         margin: 0;
@@ -430,12 +430,45 @@
           grid-template-columns: 1fr !important;
         }
       }
+
+      /* Mobile responsive for yearly tracking table */
+      @media screen and (max-width: 768px) {
+        #tab-3 .yearly-tracking-table {
+          font-size: 0.75em;
+        }
+
+        #tab-3 .yearly-tracking-table th,
+        #tab-3 .yearly-tracking-table td {
+          padding: 6px 4px !important;
+        }
+
+        #tab-3 .yearly-tracking-header {
+          font-size: 1em !important;
+          padding: 10px !important;
+        }
+      }
+
+      @media screen and (max-width: 480px) {
+        #tab-3 .yearly-tracking-table {
+          font-size: 0.65em;
+        }
+
+        #tab-3 .yearly-tracking-table th,
+        #tab-3 .yearly-tracking-table td {
+          padding: 4px 2px !important;
+        }
+
+        #tab-3 .yearly-tracking-header {
+          font-size: 0.9em !important;
+          padding: 8px !important;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>📚 Interview Preparation syllabus</h1>
+        <h1>📚 Interview Preparation Syllabus</h1>
       </div>
 
       <div class="tabs">
@@ -1130,10 +1163,11 @@
 
         <!-- Yearly Tracking Table -->
         <div style="margin-top: 40px;">
-          <h3 style="background-color: #e8f5e9; color: #2e7d32; padding: 15px; border: 2px solid #2c3e50; border-radius: 8px 8px 0 0; margin-bottom: 0; font-size: 1.3em; font-weight: 700; text-align: center;">
+          <h3 class="yearly-tracking-header" style="background-color: #e8f5e9; color: #2e7d32; padding: 15px; border: 2px solid #2c3e50; border-radius: 8px 8px 0 0; margin-bottom: 0; font-size: 1.3em; font-weight: 700; text-align: center;">
             Saiteja's Time tracking - 2025
           </h3>
-          <table style="width: 100%; border-collapse: collapse; border: 2px solid #2c3e50; border-top: none;">
+          <div style="overflow-x: auto;">
+            <table class="yearly-tracking-table" style="width: 100%; border-collapse: collapse; border: 2px solid #2c3e50; border-top: none;">
             <thead style="background-color: #f8f9fa; color: #2c3e50;">
               <tr>
                 <th style="padding: 12px; border: 2px solid #2c3e50; text-align: left; font-weight: 700; width: 15%;">Month</th>
@@ -1246,6 +1280,7 @@
               </tr>
             </tfoot>
           </table>
+          </div>
         </div>
 
       </div>
