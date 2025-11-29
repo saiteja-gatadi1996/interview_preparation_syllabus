@@ -536,6 +536,8 @@
         border-radius: 8px;
         padding: 15px;
         min-height: 500px;
+        display: flex;
+        flex-direction: column;
       }
 
       .column-header {
@@ -577,6 +579,14 @@
       .card-container {
         min-height: 400px;
         position: relative;
+        flex: 1;
+      }
+
+      /* Improve drag behavior over scrollable areas */
+      .card-container.drag-over {
+        background-color: rgba(102, 126, 234, 0.05);
+        outline: 2px dashed #667eea;
+        outline-offset: -8px;
       }
 
       .kanban-card {
@@ -593,6 +603,11 @@
       .kanban-card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transform: translateY(-2px);
+      }
+
+      .kanban-card.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
       }
 
       .kanban-card:active {
@@ -1317,7 +1332,7 @@
           </div>
 
           <div class="control-group">
-            <label for="card-position">When moving card back, place at:</label>
+            <label for="card-position">When moving card back to Todo, place at:</label>
             <select id="card-position" onchange="saveState()">
               <option value="top">Top (1st position)</option>
               <option value="bottom" selected>Bottom (last position)</option>
@@ -3400,7 +3415,6 @@
 
       // Tab switching function
       function switchTab(tabIndex) {
-        // Remove active class from all tabs and content
         document
           .querySelectorAll('.tab')
           .forEach((tab) => tab.classList.remove('active'));
@@ -3408,7 +3422,6 @@
           .querySelectorAll('.tab-content')
           .forEach((content) => content.classList.remove('active'));
 
-        // Add active class to selected tab and content
         document.querySelectorAll('.tab')[tabIndex].classList.add('active');
         document.getElementById(`tab-${tabIndex}`).classList.add('active');
       }
@@ -3416,69 +3429,53 @@
       // Calculate days to complete based on story points
       function calculateDaysToComplete() {
         const hoursPerSP = parseInt(document.getElementById('sp-hours').value);
-        const totalHours = 233; // Total hours is 233
+        const totalHours = 233;
         const daysNeeded = totalHours / hoursPerSP;
         const roundedDays = Math.round(daysNeeded);
 
         document.getElementById('days-result').textContent =
           roundedDays + ' days';
 
-        // Update all card story points based on hours per SP
         updateCardStoryPoints(hoursPerSP);
-
-        // Update bottom stats
         updateBottomStats(hoursPerSP);
-
         saveState();
       }
 
       // Smart rounding for story points
 
       function smartRoundSP(value) {
-        // Handle edge case: values less than 0.1 become 0
-
         if (value < 0.1) {
           return 0;
         }
 
         const wholePart = Math.floor(value);
-
         const decimalPart = value - wholePart;
-
-        // Decimal 0.1-0.4 → round to .5
 
         if (decimalPart >= 0.1 && decimalPart < 0.5) {
           return wholePart + 0.5;
-        }
-
-        // Decimal 0.5-0.9 → round up to next whole
-        else if (decimalPart >= 0.5) {
+        } else if (decimalPart >= 0.5) {
           return wholePart + 1;
-        }
-
-        // Decimal 0.0-0.09 → keep whole number (but minimum 0.5 if value >= 0.1)
-        else {
+        } else {
           return wholePart === 0 ? 0.5 : wholePart;
         }
       }
 
       // Update story points on all cards
       function updateCardStoryPoints(hoursPerSP) {
-        // Card hours mapping
         const cardHours = {
-          'card-1': 5, // Coding Patterns
-          'card-2': 5, // CSS & DOM
-          'card-3': 20, // JavaScript Advanced
-          'card-4': 10, // Micro Frontends
-          'card-5': 10, // Node.js
-          'card-6': 22, // Problem Solving
-          'card-7': 10, // React
-          'card-8': 10, // Redux
-          'card-9': 10, // TanStack Query
-          'card-10': 10, // TypeScript
-          'card-11': 10, // Web Dev
-          'card-12': 31, // Machine Coding
-          'card-13': 80, // System Design
+          'card-1': 5,
+          'card-2': 5,
+          'card-3': 20,
+          'card-4': 10,
+          'card-5': 10,
+          'card-6': 22,
+          'card-7': 10,
+          'card-8': 10,
+          'card-9': 10,
+          'card-10': 10,
+          'card-11': 10,
+          'card-12': 31,
+          'card-13': 80,
         };
 
         // Update each card's story points
@@ -3500,17 +3497,14 @@
       function updateBottomStats(hoursPerSP) {
         const cardHours = [5, 5, 20, 10, 10, 22, 10, 10, 10, 10, 10, 31, 80];
 
-        // Calculate total story points
         let totalSP = 0;
         cardHours.forEach((hours) => {
           const rawSP = hours / hoursPerSP;
           totalSP += smartRoundSP(rawSP);
         });
 
-        // Total hours is always 233
         const totalHours = 233;
 
-        // Update the display
         document.querySelector(
           '.kanban-stats .stat-box:nth-child(1) .stat-value'
         ).textContent = totalSP + ' SP';
@@ -3519,11 +3513,11 @@
         ).textContent = totalHours + ' hours';
       }
 
-      // Drag and Drop Functions for Kanban Board
+      // Improved allowDrop to work on cards too
       function allowDrop(ev) {
         ev.preventDefault();
+        ev.stopPropagation();
       }
-
       function saveState() {
         try {
           const state = {
@@ -3565,7 +3559,6 @@
             .forEach((card) => (allCards[card.id] = card));
 
           if (!raw) {
-            // First time
             initializePrioritySelects();
             calculateDaysToComplete();
             updateCardCounts();
@@ -3648,61 +3641,93 @@
 
       function drag(ev) {
         ev.dataTransfer.setData('text', ev.target.id);
-        ev.target.style.opacity = '0.5';
+        ev.target.classList.add('dragging');
+        window.draggedElement = ev.target;
       }
 
+      // UPDATED: Completely rewritten drop function
       function drop(ev) {
         ev.preventDefault();
+        ev.stopPropagation();
+
         const data = ev.dataTransfer.getData('text');
-        const draggedElement = document.getElementById(data);
+        const draggedElement =
+          document.getElementById(data) || window.draggedElement;
 
-        // Reset opacity
-        draggedElement.style.opacity = '1';
+        if (!draggedElement) return;
 
-        // Get the drop target container
-        let dropTarget = ev.target;
+        draggedElement.classList.remove('dragging');
 
-        // Find the card-container if we didn't drop directly on it
-        while (dropTarget && !dropTarget.classList.contains('card-container')) {
-          dropTarget = dropTarget.parentElement;
+        // Find target container - improved logic
+        let targetContainer = null;
+        let element = ev.target;
+
+        // First, check if we dropped directly on a container
+        if (element.classList.contains('card-container')) {
+          targetContainer = element;
+        } else {
+          // Otherwise, traverse up to find the container
+          while (element && element !== document.body) {
+            if (
+              element.classList &&
+              element.classList.contains('card-container')
+            ) {
+              targetContainer = element;
+              break;
+            }
+            element = element.parentElement;
+          }
         }
 
-        if (dropTarget && dropTarget.classList.contains('card-container')) {
-          // Track if card was in Progress or Done
-          const sourceContainer = draggedElement.parentElement;
-          const targetContainerId = dropTarget.id;
-
-          // Mark card as "used" if moving to Progress or Done
-          if (
-            targetContainerId === 'progress-container' ||
-            targetContainerId === 'done-container'
-          ) {
-            cardHistory.add(data);
-          }
-
-          // Remove empty state message if exists
-          const emptyState = dropTarget.querySelector('.empty-state');
-          if (emptyState) {
-            emptyState.remove();
-          }
-
-          // Check if card was previously in Progress/Done and is being moved back to Todo
-          const isMovingBackToTodo =
-            targetContainerId === 'todo-container' && cardHistory.has(data);
-
-          if (isMovingBackToTodo) {
-            // Get user preference for card placement
-            const position = document.getElementById('card-position').value;
-            placeCardAtPosition(dropTarget, draggedElement, position);
-          } else {
-            // Normal placement at the end
-            dropTarget.appendChild(draggedElement);
-          }
-
-          updateCardCounts();
-          updateCompletion();
-          saveState();
+        if (!targetContainer) {
+          console.log('No valid drop target found');
+          return;
         }
+
+        const targetContainerId = targetContainer.id;
+        const sourceContainer = draggedElement.parentElement;
+
+        // Don't do anything if dropping in the same container
+        if (sourceContainer === targetContainer) {
+          return;
+        }
+
+        // Mark card as "used" if moving to Progress or Done
+        if (
+          targetContainerId === 'progress-container' ||
+          targetContainerId === 'done-container'
+        ) {
+          cardHistory.add(data);
+        }
+
+        // Remove empty state message if exists
+        const emptyState = targetContainer.querySelector('.empty-state');
+        if (emptyState) {
+          emptyState.remove();
+        }
+
+        // Check if card was previously in Progress/Done and is being moved back to Todo
+        const isMovingBackToTodo =
+          targetContainerId === 'todo-container' && cardHistory.has(data);
+
+        if (isMovingBackToTodo) {
+          const position = document.getElementById('card-position').value;
+          placeCardAtPosition(targetContainer, draggedElement, position);
+        } else {
+          // Normal placement at the end
+          targetContainer.appendChild(draggedElement);
+        }
+
+        // Remove drag-over class from all containers
+        document.querySelectorAll('.card-container').forEach((container) => {
+          container.classList.remove('drag-over');
+        });
+
+        updateCardCounts();
+        updateCompletion();
+        saveState();
+
+        window.draggedElement = null;
       }
 
       // Place card at specific position based on user preference
@@ -3712,17 +3737,14 @@
         );
 
         if (position === 'top') {
-          // Insert at the beginning
           if (existingCards.length > 0) {
             container.insertBefore(card, existingCards[0]);
           } else {
             container.appendChild(card);
           }
         } else if (position === 'bottom') {
-          // Insert at the end
           container.appendChild(card);
         } else {
-          // Insert at specific position (2nd, 3rd, 4th, 5th)
           const index = parseInt(position) - 1;
           if (existingCards.length > index) {
             container.insertBefore(card, existingCards[index]);
@@ -3748,7 +3770,6 @@
         document.getElementById('progress-count').textContent = progressCount;
         document.getElementById('done-count').textContent = doneCount;
 
-        // Add empty state if container is empty
         addEmptyStateIfNeeded('todo-container', 'Drag cards here to plan them');
         addEmptyStateIfNeeded(
           'progress-container',
@@ -3800,14 +3821,55 @@
         });
       }
 
-      // Prevent drag end opacity issue
+      // Also update the dragend event listener
       document.addEventListener('dragend', function (ev) {
         if (ev.target.classList.contains('kanban-card')) {
-          ev.target.style.opacity = '1';
+          ev.target.classList.remove('dragging');
         }
+        // Remove drag-over from all containers
+        document.querySelectorAll('.card-container').forEach((container) => {
+          container.classList.remove('drag-over');
+        });
+        window.draggedElement = null;
       });
 
-      // Initialize counts on load
+      // Add dragover event to all card containers for better drop zone detection
+      document.addEventListener('DOMContentLoaded', function () {
+        const containers = document.querySelectorAll('.card-container');
+
+        containers.forEach((container) => {
+          // Dragover on container
+          container.addEventListener('dragover', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+          });
+
+          // Dragleave on container
+          container.addEventListener('dragleave', function (ev) {
+            // Only remove if actually leaving the container
+            const rect = this.getBoundingClientRect();
+            const x = ev.clientX;
+            const y = ev.clientY;
+
+            if (
+              x <= rect.left ||
+              x >= rect.right ||
+              y <= rect.top ||
+              y >= rect.bottom
+            ) {
+              this.classList.remove('drag-over');
+            }
+          });
+
+          // Drop on container
+          container.addEventListener('drop', function (ev) {
+            this.classList.remove('drag-over');
+          });
+        });
+      });
+
       window.addEventListener('load', function () {
         loadState();
       });
